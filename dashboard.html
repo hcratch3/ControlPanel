@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コントロールパネル</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    function getCookie(name) {
+      let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      if (match) return match[2];
+    }
+
+    window.onload = function() {
+      const username = getCookie('username');
+      if (username) {
+        document.getElementById('welcomeMessage').textContent = `${username}さん、ようこそ！`;
+      } else {
+        window.location.href = 'login.html';  // ログインしていない場合はログインページにリダイレクト
+      }
+    };
+  </script>
+</head>
+<body>
+  <div class="dashboard-container">
+    <h1 id="welcomeMessage">ようこそ！</h1>
+    <div class="button-grid">
+      <button onclick="location.href='page1.html'">機能1</button>
+      <button onclick="location.href='page2.html'">機能2</button>
+      <button onclick="location.href='page3.html'">機能3</button>
+      <button onclick="location.href='page4.html'">機能4</button>
+    </div>
+    <a href="logout.html" class="button">ログアウト</a>
+  </div>
+</body>
+</html>
