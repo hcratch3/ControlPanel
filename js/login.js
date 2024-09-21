@@ -11,7 +11,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 
       if (user) {
         document.cookie = `username=${user.name}; path=/;`;
-        window.location.href = '../dashboard.html';  // ダッシュボードにリダイレクト
+        window.location.href = './dashboard.html';  // ダッシュボードにリダイレクト
       } else {
         errorElement.textContent = 'ユーザーIDが無効です。';
       }
