@@ -4,7 +4,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   const userID = document.getElementById('userID').value;
   const errorElement = document.getElementById('error');
 
-  fetch('users.json')
+  fetch('./users.json')
     .then(response => response.json())
     .then(data => {
       const user = data.users.find(user => user.id === userID);
