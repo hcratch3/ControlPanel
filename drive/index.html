@@ -2,8 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Enhanced File Manager with Folders</title>
-  <script src="https://apis.google.com/js/api.js"></script>
+  <title>Google Drive</title>  
   <style>
     .file-item { display: flex; align-items: center; cursor: pointer; }
     .file-item i { margin-right: 10px; }
@@ -12,135 +11,7 @@
     .context-menu-item:hover { background-color: #eee; }
   </style>
 </head>
-<body onload="handleClientLoad()">
-  <h1>Google Drive File Manager with Folders</h1>
-
-  <button onclick="listFiles()">ファイルを表示</button>
-  <div id="file-list"></div>
-
-  <div id="context-menu" class="context-menu">
-    <div class="context-menu-item" onclick="downloadSelected()">ダウンロード</div>
-    <div class="context-menu-item" onclick="deleteSelected()">削除</div>
-  </div>
-
-  <input type="file" id="file-input" style="display:none" onchange="uploadFile()">
-
-  <script>
-    let selectedFileId = null;
-    let contextMenuVisible = false;
-    let currentFolderId = 'root'; // 初期はルートフォルダー
-
-    function handleClientLoad() {
-      gapi.load('client:auth2', initClient);
-    }
-
-    function initClient() {
-      gapi.client.init({
-        apiKey: 'AIzaSyDYUGIhOn2eK-L2X931X0UC-R0mX0sDXMA',
-        clientId: '320039054088-qfva8vns5puhqk3d295b57djh36lqe6a.apps.googleusercontent.com',
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-        scope: 'https://www.googleapis.com/auth/drive.file'
-      }).then(function () {
-        gapi.auth2.getAuthInstance().signIn();
-      });
-    }
-
-    function listFiles() {
-      gapi.client.drive.files.list({
-        'q': `'${currentFolderId}' in parents`,
-        'pageSize': 10,
-        'fields': "nextPageToken, files(id, name, mimeType)"
-      }).then(function(response) {
-        const files = response.result.files;
-        if (files && files.length > 0) {
-          let output = '<ul>';
-          files.forEach(file => {
-            const icon = file.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄';
-            output += `<li class="file-item" oncontextmenu="showContextMenu(event, '${file.id}')" onclick="hideContextMenu()" ondblclick="openFolder('${file.id}')">
-              <i>${icon}</i> ${file.name}</li>`;
-          });
-          output += '</ul>';
-          document.getElementById('file-list').innerHTML = output;
-        }
-      });
-    }
-
-    function openFolder(folderId) {
-      currentFolderId = folderId; // 移動するフォルダーのIDを設定
-      listFiles(); // フォルダー内のファイルをリスト表示
-    }
-
-    function uploadFile() {
-      const file = document.getElementById('file-input').files[0];
-      const metadata = { 'name': file.name, 'mimeType': file.type, parents: [currentFolderId] };
-      const reader = new FileReader();
-      reader.readAsBinaryString(file);
-      reader.onload = function() {
-        const base64Data = btoa(reader.result);
-        gapi.client.drive.files.create({
-          resource: metadata,
-          media: { mimeType: file.type, body: base64Data }
-        }).then(function(response) {
-          alert('File uploaded successfully!');
-          listFiles();
-        });
-      };
-    }
-
-    function showContextMenu(event, fileId) {
-      event.preventDefault();
-      selectedFileId = fileId;
-      const contextMenu = document.getElementById('context-menu');
-      contextMenu.style.display = 'block';
-      contextMenu.style.left = event.pageX + 'px';
-      contextMenu.style.top = event.pageY + 'px';
-      contextMenuVisible = true;
-    }
-
-    function hideContextMenu() {
-      if (contextMenuVisible) {
-        document.getElementById('context-menu').style.display = 'none';
-        contextMenuVisible = false;
-      }
-    }
-
-    function downloadSelected() {
-      downloadFile(selectedFileId);
-      hideContextMenu();
-    }
-
-    function deleteSelected() {
-      deleteFile(selectedFileId);
-      hideContextMenu();
-    }
-
-    function downloadFile(fileId) {
-      gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }).then(function(response) {
-        const blob = new Blob([response.body], { type: response.headers['Content-Type'] });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = response.result.name;
-        link.click();
-      });
-    }
-
-    function deleteFile(fileId) {
-      gapi.client.drive.files.delete({ fileId: fileId }).then(function(response) {
-        alert('File deleted successfully!');
-        listFiles();
-      });
-    }
-
-    window.addEventListener('click', function() {
-      hideContextMenu();
-    });
-
-    window.addEventListener('contextmenu', function(event) {
-      event.preventDefault();
-      if (!contextMenuVisible) {
-        document.getElementById('file-input').click();
-      }
-    });
-  </script>
+<body>
+  <>
 </body>
 </html>
