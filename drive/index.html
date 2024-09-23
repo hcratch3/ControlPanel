@@ -5,81 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://ssl.gstatic.com/docs/script/css/add-ons.css" rel="stylesheet" />
     <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <title>Google Picker Uploader</title>
 </head>
 <body>
-    <button id="authorizeButton" style="display: none;">Googleにログイン</button>
-    <button id="signoutButton" style="display: none;">ログアウト</button>
+    <div id="g_id_onload"
+         data-client_id="320039054088-qfva8vns5puhqk3d295b57djh36lqe6a.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
     <button id="uploadButton" style="display: none;">ファイルをアップロード</button>
     <div id="result"></div>
 
     <script>
-        var CLIENT_ID = '320039054088-qfva8vns5puhqk3d295b57djh36lqe6a.apps.googleusercontent.com';
         var API_KEY = 'AIzaSyDYUGIhOn2eK-L2X931X0UC-R0mX0sDXMA';
-        var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
         var SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-        var authorizeButton = document.getElementById('authorizeButton');
-        var signoutButton = document.getElementById('signoutButton');
-        var uploadButton = document.getElementById('uploadButton');
         var pickerApiLoaded = false;
-
-        function handleClientLoad() {
-            gapi.load('client:auth2', initClient);
-            gapi.load('picker', onPickerApiLoad);
+        var tokenClient;
+        var accessToken = null;
+        
+        // Google Identity Services の認証を初期化
+        function handleCredentialResponse(response) {
+            accessToken = response.credential;
+            document.getElementById('uploadButton').style.display = 'block';
         }
 
-        function initClient() {
-            gapi.client.init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES
-            }).then(function () {
-                // Listen for sign-in state changes.
-                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-
-                // Handle the initial sign-in state.
-                updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-                authorizeButton.onclick = handleAuthClick;
-                signoutButton.onclick = handleSignoutClick;
-            }, function (error) {
-                appendPre(JSON.stringify(error, null, 2));
-            });
+        function initializePicker() {
+            gapi.load('picker', { 'callback': onPickerApiLoad });
         }
 
         function onPickerApiLoad() {
             pickerApiLoaded = true;
         }
 
-        function updateSigninStatus(isSignedIn) {
-            if (isSignedIn) {
-                authorizeButton.style.display = 'none';
-                signoutButton.style.display = 'block';
-                uploadButton.style.display = 'block';
-                uploadButton.onclick = createPicker;
-            } else {
-                authorizeButton.style.display = 'block';
-                signoutButton.style.display = 'none';
-                uploadButton.style.display = 'none';
-            }
-        }
-
-        function handleAuthClick(event) {
-            gapi.auth2.getAuthInstance().signIn();
-        }
-
-        function handleSignoutClick(event) {
-            gapi.auth2.getAuthInstance().signOut();
-        }
+        document.getElementById('uploadButton').onclick = function() {
+            createPicker();
+        };
 
         function createPicker() {
-            var oauthToken = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
-            if (pickerApiLoaded && oauthToken) {
+            if (pickerApiLoaded && accessToken) {
                 var uploadView = new google.picker.DocsUploadView();
                 var picker = new google.picker.PickerBuilder()
                     .addView(uploadView)
-                    .setOAuthToken(oauthToken)
+                    .setOAuthToken(accessToken)
                     .setDeveloperKey(API_KEY)
                     .setCallback(pickerCallback)
                     .build();
@@ -96,13 +65,7 @@
             }
         }
 
-        function appendPre(message) {
-            var pre = document.getElementById('result');
-            var textContent = document.createTextNode(message + '\n');
-            pre.appendChild(textContent);
-        }
-
-        handleClientLoad();
+        initializePicker();
     </script>
 </body>
 </html>
