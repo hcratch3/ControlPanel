@@ -5,34 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Drive Upload</title>
     <script src="https://apis.google.com/js/api.js"></script>
-    <style>
-        #drop-zone {
-            width: 100%;
-            padding: 50px;
-            border: 2px dashed #ccc;
-            text-align: center;
-            color: #ccc;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
-        #drop-zone.hover {
-            border-color: #333;
-            color: #333;
-        }
-        #file-input {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <h1>Upload to Google Drive</h1>
     
     <button id="authorize_button" style="display: none;">Authorize</button>
     <button id="signout_button" style="display: none;">Sign Out</button>
-
-    <div id="drop-zone">Drag & Drop Files Here or Click to Select</div>
-    <input type="file" id="file-input" multiple />
     
+    <input type="file" id="file-input" />
     <input type="text" id="folder-name" placeholder="Folder Name" />
     <button id="upload-btn" disabled>Upload</button>
 
@@ -65,7 +45,7 @@
 
                 authorizeButton.onclick = handleAuthClick;
                 signoutButton.onclick = handleSignoutClick;
-                uploadButton.onclick = uploadFiles;
+                uploadButton.onclick = uploadFile;
             });
         }
 
@@ -123,13 +103,13 @@
             });
         }
 
-        function uploadFiles() {
+        function uploadFile() {
             const fileInput = document.getElementById('file-input');
             const folderNameInput = document.getElementById('folder-name');
-            const files = fileInput.files;
+            const file = fileInput.files[0];
             const folderName = folderNameInput.value;
 
-            if (files.length === 0) {
+            if (!file) {
                 document.getElementById('result').innerText = 'Please select a file.';
                 return;
             }
@@ -141,58 +121,36 @@
 
             searchFolder(folderName).then(folderId => {
                 if (!folderId) {
+                    // フォルダーが存在しない場合、新しいフォルダーを作成
                     return createFolder(folderName);
                 }
                 return folderId;
             }).then(folderId => {
-                Array.from(files).forEach(file => {
-                    const metadata = {
-                        'name': file.name,
-                        'parents': [folderId],
-                    };
+                const metadata = {
+                    'name': file.name,
+                    'parents': [folderId],
+                };
 
-                    const formData = new FormData();
-                    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    formData.append('file', file);
+                const formData = new FormData();
+                formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                formData.append('file', file);
 
-                    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${gapi.auth.getToken().access_token}`,
-                        },
-                        body: formData,
-                    }).then(response => response.json())
-                    .then(data => {
-                        const driveUrl = `https://drive.google.com/file/d/${data.id}/view`;
-                        document.getElementById('result').innerHTML += `<p>File uploaded: <a href="${driveUrl}" target="_blank">${file.name}</a></p>`;
-                    }).catch(error => {
-                        document.getElementById('result').innerHTML += `<p>Upload failed for ${file.name}: ${error}</p>`;
-                    });
+                return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${gapi.auth.getToken().access_token}`,
+                    },
+                    body: formData,
                 });
+            }).then(response => response.json())
+            .then(data => {
+                const driveUrl = `https://drive.google.com/file/d/${data.id}/view`;
+                document.getElementById('result').innerHTML = `File uploaded to folder: <a href="${driveUrl}" target="_blank">${file.name}</a>`;
+            })
+            .catch(error => {
+                document.getElementById('result').innerText = `Upload failed: ${error}`;
             });
         }
-
-        // ドラッグ・アンド・ドロップの設定
-        const dropZone = document.getElementById('drop-zone');
-        dropZone.addEventListener('click', () => {
-            document.getElementById('file-input').click();
-        });
-
-        dropZone.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            dropZone.classList.add('hover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('hover');
-        });
-
-        dropZone.addEventListener('drop', (event) => {
-            event.preventDefault();
-            dropZone.classList.remove('hover');
-            const files = event.dataTransfer.files;
-            document.getElementById('file-input').files = files;
-        });
 
         document.addEventListener('DOMContentLoaded', handleClientLoad);
     </script>
