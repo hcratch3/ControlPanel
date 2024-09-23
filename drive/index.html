@@ -1,0 +1,60 @@
+<link href="https://ssl.gstatic.com/docs/script/css/add-ons.css" rel="stylesheet" />
+<script type="text/javascript" src="https://apis.google.com/js/api.js"></script>
+<script type="text/javascript">
+var DEVELOPER_KEY = 'ここにAPIキーを記述する';
+var DIALOG_DIMENSIONS = {width: 750, height: 450};
+var pickerApiLoaded = false;
+var origin = google.script.host.origin;
+var parent = "ここにアップロード先フォルダのIDを記述する";
+//Google Picker API呼び出し
+gapi.load('picker', {'callback': function() {
+pickerApiLoaded = true;
+}});
+//ドラッグエリアを表示する
+　google.script.run.withSuccessHandler(createPicker).withFailureHandler(showError).getOAuthToken();
+//Picker Dialogを表示する
+function createPicker(token) {
+if (pickerApiLoaded && token) {
+var uploadView  = new google.picker.DocsUploadView().setParent(parent);;
+var picker = new google.picker.PickerBuilder()
+.addView(uploadView)
+.hideTitleBar()
+.setOAuthToken(token)
+.setOrigin(origin)
+.setLocale("ja")
+.enableFeature(google.picker.Feature.NAV_HIDDEN)
+.enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+.setDeveloperKey(DEVELOPER_KEY)
+.setCallback(pickerCallback)
+.setSize(DIALOG_DIMENSIONS.width - 10,
+DIALOG_DIMENSIONS.height -10)
+.build();
+picker.setVisible(true);
+} else {
+showError('Pickerをロード出来ませんでした。');
+}
+}
+//Callbackデータを受け取る
+function pickerCallback(data) {
+if (data.action == google.picker.Action.PICKED) {
+var length = data.docs.length;
+var urlbase;
+for(var i = 0;i<length;i++){
+var fileId = data.docs[i].id;
+var url = data.docs[i].url;
+var title = data.docs[i].name;
+//アップロード完了メッセージ 
+urlbase = "https://drive.google.com/file/d/" + fileId + "/view?usp=sharing"
+document.getElementById('result').innerHTML +=
+'<b>アップロードしたファイル:</b><br />ファイル名: <a href="' + urlbase + '" target="_blank">' + title + '</a><br />ID: ' + fileId + '<br>';
+}
+} else if (data.action == google.picker.Action.CANCEL) {
+google.script.run.messager("アップロードはキャンセルされました。");
+}
+}
+//エラー表示用
+function showError(message) {
+document.getElementById('result').innerHTML = 'Error: ' + message;
+}
+</script>
+<div id = "result"></div>
