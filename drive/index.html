@@ -1,71 +1,200 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://ssl.gstatic.com/docs/script/css/add-ons.css" rel="stylesheet" />
+    <title>Google Drive Upload</title>
     <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <title>Google Picker Uploader</title>
+    <style>
+        #drop-zone {
+            width: 100%;
+            padding: 50px;
+            border: 2px dashed #ccc;
+            text-align: center;
+            color: #ccc;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        #drop-zone.hover {
+            border-color: #333;
+            color: #333;
+        }
+        #file-input {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div id="g_id_onload"
-         data-client_id="320039054088-qfva8vns5puhqk3d295b57djh36lqe6a.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
-    <div class="g_id_signin" data-type="standard"></div>
-    <button id="uploadButton" style="display: none;">ファイルをアップロード</button>
+    <h1>Upload to Google Drive</h1>
+    
+    <button id="authorize_button" style="display: none;">Authorize</button>
+    <button id="signout_button" style="display: none;">Sign Out</button>
+
+    <div id="drop-zone">Drag & Drop Files Here or Click to Select</div>
+    <input type="file" id="file-input" multiple />
+    
+    <input type="text" id="folder-name" placeholder="Folder Name" />
+    <button id="upload-btn" disabled>Upload</button>
+
     <div id="result"></div>
 
     <script>
-        var API_KEY = 'AIzaSyDYUGIhOn2eK-L2X931X0UC-R0mX0sDXMA';
-        var SCOPES = 'https://www.googleapis.com/auth/drive.file';
-        var pickerApiLoaded = false;
-        var tokenClient;
-        var accessToken = null;
-        
-        // Google Identity Services の認証を初期化
-        function handleCredentialResponse(response) {
-            accessToken = response.credential;
-            document.getElementById('uploadButton').style.display = 'block';
+        let GoogleAuth;
+        const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        const CLIENT_ID = '320039054088-qfva8vns5puhqk3d295b57djh36lqe6a.apps.googleusercontent.com';  // ここにGoogle Cloud Consoleで取得したクライアントIDを入れてください
+
+        function handleClientLoad() {
+            gapi.load('client:auth2', initClient);
         }
 
-        function initializePicker() {
-            gapi.load('picker', { 'callback': onPickerApiLoad });
+        function initClient() {
+            gapi.client.init({
+                'clientId': CLIENT_ID,
+                'scope': SCOPE,
+            }).then(() => {
+                GoogleAuth = gapi.auth2.getAuthInstance();
+                const authorizeButton = document.getElementById('authorize_button');
+                const signoutButton = document.getElementById('signout_button');
+                const uploadButton = document.getElementById('upload-btn');
+
+                // 認証状態の変化を監視
+                GoogleAuth.isSignedIn.listen(updateSigninStatus);
+
+                // 現在の認証状態を確認
+                updateSigninStatus(GoogleAuth.isSignedIn.get());
+
+                authorizeButton.onclick = handleAuthClick;
+                signoutButton.onclick = handleSignoutClick;
+                uploadButton.onclick = uploadFiles;
+            });
         }
 
-        function onPickerApiLoad() {
-            pickerApiLoaded = true;
-        }
-
-        document.getElementById('uploadButton').onclick = function() {
-            createPicker();
-        };
-
-        function createPicker() {
-            if (pickerApiLoaded && accessToken) {
-                var uploadView = new google.picker.DocsUploadView();
-                var picker = new google.picker.PickerBuilder()
-                    .addView(uploadView)
-                    .setOAuthToken(accessToken)
-                    .setDeveloperKey(API_KEY)
-                    .setCallback(pickerCallback)
-                    .build();
-                picker.setVisible(true);
+        function updateSigninStatus(isSignedIn) {
+            const authorizeButton = document.getElementById('authorize_button');
+            const signoutButton = document.getElementById('signout_button');
+            const uploadButton = document.getElementById('upload-btn');
+            if (isSignedIn) {
+                authorizeButton.style.display = 'none';
+                signoutButton.style.display = 'block';
+                uploadButton.disabled = false;
+            } else {
+                authorizeButton.style.display = 'block';
+                signoutButton.style.display = 'none';
+                uploadButton.disabled = true;
             }
         }
 
-        function pickerCallback(data) {
-            if (data.action == google.picker.Action.PICKED) {
-                var fileId = data.docs[0].id;
-                var fileUrl = "https://drive.google.com/file/d/" + fileId + "/view?usp=sharing";
-                document.getElementById('result').innerHTML = 
-                    '<p>ファイルをアップロードしました: <a href="' + fileUrl + '" target="_blank">' + fileUrl + '</a></p>';
-            }
+        function handleAuthClick() {
+            GoogleAuth.signIn();
         }
 
-        initializePicker();
+        function handleSignoutClick() {
+            GoogleAuth.signOut();
+        }
+
+        // フォルダーを作成する関数
+        function createFolder(folderName) {
+            const folderMetadata = {
+                'name': folderName,
+                'mimeType': 'application/vnd.google-apps.folder'
+            };
+
+            return gapi.client.drive.files.create({
+                resource: folderMetadata,
+                fields: 'id'
+            }).then(response => {
+                return response.result.id;
+            });
+        }
+
+        // フォルダーを検索する関数
+        function searchFolder(folderName) {
+            return gapi.client.drive.files.list({
+                'q': `mimeType='application/vnd.google-apps.folder' and name='${folderName}'`,
+                'fields': 'files(id, name)',
+                'spaces': 'drive'
+            }).then(response => {
+                const files = response.result.files;
+                if (files && files.length > 0) {
+                    return files[0].id;
+                } else {
+                    return null;
+                }
+            });
+        }
+
+        function uploadFiles() {
+            const fileInput = document.getElementById('file-input');
+            const folderNameInput = document.getElementById('folder-name');
+            const files = fileInput.files;
+            const folderName = folderNameInput.value;
+
+            if (files.length === 0) {
+                document.getElementById('result').innerText = 'Please select a file.';
+                return;
+            }
+
+            if (!folderName) {
+                document.getElementById('result').innerText = 'Please enter a folder name.';
+                return;
+            }
+
+            searchFolder(folderName).then(folderId => {
+                if (!folderId) {
+                    return createFolder(folderName);
+                }
+                return folderId;
+            }).then(folderId => {
+                Array.from(files).forEach(file => {
+                    const metadata = {
+                        'name': file.name,
+                        'parents': [folderId],
+                    };
+
+                    const formData = new FormData();
+                    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    formData.append('file', file);
+
+                    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${gapi.auth.getToken().access_token}`,
+                        },
+                        body: formData,
+                    }).then(response => response.json())
+                    .then(data => {
+                        const driveUrl = `https://drive.google.com/file/d/${data.id}/view`;
+                        document.getElementById('result').innerHTML += `<p>File uploaded: <a href="${driveUrl}" target="_blank">${file.name}</a></p>`;
+                    }).catch(error => {
+                        document.getElementById('result').innerHTML += `<p>Upload failed for ${file.name}: ${error}</p>`;
+                    });
+                });
+            });
+        }
+
+        // ドラッグ・アンド・ドロップの設定
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+
+        dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropZone.classList.add('hover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('hover');
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('hover');
+            const files = event.dataTransfer.files;
+            document.getElementById('file-input').files = files;
+        });
+
+        document.addEventListener('DOMContentLoaded', handleClientLoad);
     </script>
 </body>
 </html>
