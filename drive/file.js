@@ -1,19 +1,31 @@
 async function onChange(event) {
-  // 複数選択したファイルをFileList型オブジェクトとして取得
-  let files = event.target.files;
+  const files = event.target.files;
+  const progressBar = document.getElementById("progressBar");
+  const status = document.getElementById("status");
 
-  for (let file of files) {
+  progressBar.style.display = "block"; // プログレスバーを表示
+  progressBar.value = 0; // 初期値を設定
+  status.textContent = ""; // ステータスをリセット
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     console.log(file.name); // ファイル名を出力
 
     const fileContent = await readFile(file);
     console.log(fileContent); // ファイルの内容を出力
+
+    // プログレスバーを更新
+    progressBar.value = ((i + 1) / files.length) * 100; 
+    status.textContent = `処理中: ${i + 1}/${files.length} ファイル完了`;
   }
+
+  status.textContent = "すべてのファイルが処理されました！";
 }
 
 // ファイルをテキストとして読み込む関数
 function readFile(file) {
   return new Promise((resolve, reject) => {
-    let fileReader = new FileReader();
+    const fileReader = new FileReader();
 
     // 読み込みが完了したときの処理
     fileReader.onload = function(event) {
