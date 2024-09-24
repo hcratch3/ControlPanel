@@ -2,31 +2,18 @@ function onChange(event) {
   // 複数選択したファイルをFileList型オブジェクトとして取得
   let files = event.target.files;
   for (let file of files) {
-    console.log(file.name); // [object file]...
+    console.log(file.name); // ファイル名を出力
 
-    let file_reader = new FileReader();
+    let fileReader = new FileReader();
 
-    file_reader.readAsText(file);
+    // ファイルの読み込みが完了したときの処理
+    fileReader.onload = function(event) {
+      console.log(event.target.result); // ファイルの内容を出力
+    };
 
-    console.log(file.result);
+    // ファイルをテキストとして読み込む
+    fileReader.readAsText(file);
   }
 }
+
 document.getElementById("file").addEventListener('change', onChange, false);
-
-window.addEventListener('DOMContentLoaded', function(){
-
-  // ファイルが選択されたら実行
-  document.getElementById("file").addEventListener('change', function(e){
-
-    let file_reader = new FileReader();
-
-    // ファイルの読み込みを行ったら実行
-    file_reader.addEventListener('load', function(e) {
-      console.log(e.target.result);
-                                    // FileReaderを使った
-                                    // テキストファイルからの読み込みテスト
-    });
-
-    file_reader.readAsText(e.target.files[0]);
-  });
-});
