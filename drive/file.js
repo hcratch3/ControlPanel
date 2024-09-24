@@ -6,14 +6,9 @@ function onChange(event) {
 
     let file_reader = new FileReader();
 
-    // ファイルの読み込みを行ったら実行
-    file_reader.addEventListener('load', function(e) {
-      console.log(e.target.result);
-                                    // FileReaderを使った
-                                    // テキストファイルからの読み込みテスト
-    });
+    file_reader.readAsText(file);
 
-    file_reader.readAsText(e.target.files[0]);
+    console.log(file.result);
   }
 }
 document.getElementById("file").addEventListener('change', onChange, false);
