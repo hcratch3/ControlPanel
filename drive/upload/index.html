@@ -16,7 +16,7 @@
 
     <!-- ファイル入力 -->
     <label for="file" class="file-label">ファイルを選択</label>
-    <input type="file" id="file" multiple />
+    <input type="file" id="file" multiple style="display:none;" />
 
     <!-- プログレスバーとステータス -->
     <progress id="progressBar" value="0" max="100" style="display: none;"></progress>
@@ -24,6 +24,8 @@
 
     <!-- アップロードボタン -->
     <button id="buttonUpload">アップロード</button>
+    <!-- ログインボタン -->
+    <button id="buttonSignin">ログイン</button>
   </div>
 
   <script type="module" src="script.js"></script>
