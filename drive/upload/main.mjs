@@ -8,8 +8,8 @@ async function onChange(event) {
   const progressBar = document.getElementById("progressBar");
   const status = document.getElementById("status");
 
-  progressBar.style.display = "block";
-  progressBar.value = 0;
+  progressBar.style.display = "block"; // プログレスバーを表示
+  progressBar.value = 0; // 初期値を設定
   status.textContent = "";
 
   const {hash} = window.location;
