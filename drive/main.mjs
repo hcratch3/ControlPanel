@@ -83,9 +83,4 @@ import signin from "./signin.mjs";
       buttonUpload.addEventListener('click', onClickButtonUpload);
     }
 
-    // Windowがロードされたらログイン画面を開く
-    window.onload = function() {
-      signin(config);
-    };
-
     main();
