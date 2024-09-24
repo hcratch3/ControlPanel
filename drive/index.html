@@ -12,8 +12,9 @@
     <div id="status"></div>
     <button id="buttonSignin">Sign in</button>
     <button id="buttonUpload">Upload</button>
-    <script type="module" src="signin.mjs"></script>
     <script type="module">
+        import signin from "./signin.mjs";
+        
         // Windowがロードされたらログイン画面を開く
         window.onload = function() {
           signin(config);
