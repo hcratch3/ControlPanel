@@ -15,7 +15,7 @@ async function onChange(event) {
   const {hash} = window.location;
   const pattern = /^#access_token=/;
   if (!pattern.test(hash)) {
-    status.textContent = "アクセストークンが見つかりません";
+    status.textContent = "アクセストークンが見つかりません。ログインしてください。";
     return;
   }
 
@@ -65,6 +65,12 @@ document.getElementById("file").addEventListener('change', onChange, false);
 
 function main() {
   const buttonUpload = document.querySelector('#buttonUpload');
+  const buttonSignin = document.querySelector('#buttonSignin');
+
+  buttonSignin.addEventListener('click', (event) => {
+    event.preventDefault();
+    signin(config);
+  });
 
   buttonUpload.addEventListener('click', async (event) => {
     event.preventDefault();
@@ -74,7 +80,7 @@ function main() {
 
     if (!pattern.test(hash)) {
       alert("ログインが必要です。サインインを行ってください。");
-      signin(config);
+      return;
     } else {
       document.getElementById("file").click(); // ファイル選択をトリガー
     }
